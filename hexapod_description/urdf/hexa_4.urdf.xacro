@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!--Hexapod Mobile Robot -->
+<robot name="hexa" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Constants for robot dimensions -->
+  <xacro:property name="body_x" value="0.100"/>
+  <xacro:property name="body_y" value="0.160"/>
+  <xacro:property name="body_z" value="0.050"/>
+  <xacro:property name="body_mass" value="0.150"/>
+
+  <xacro:property name="coxa_length" value="0.050"/>
+  <xacro:property name="coxa_mass" value="0.005"/>
+  <xacro:property name="femur_length" value="0.080"/>
+  <xacro:property name="femur_mass" value="0.008"/>
+  <xacro:property name="tibia_length" value="0.180"/>
+  <xacro:property name="tibia_mass" value="0.010"/>
+  <xacro:property name="leg_radius" value="0.005"/>
+  <xacro:property name="femur_angle" value="${45*pi/180}"/>
+  <xacro:property name="tibia_angle" value="${105*pi/180}"/>
+  <xacro:property name="foot_radius" value="0.010"/>
+
+  <xacro:property name="mg90s_torque" value="${0.21582*0.8}"/> <!--stalltorque on earth is 2.2kgcm at 6v, 20% safety margin -->
+  <xacro:property name="mg90s_velocity" value="${0.8*180/60/pi*0.8}"/> <!--0.08sec/60degrees at 6v, 20% safety margin -->
+
+  <!--${tibia_length*cos(pi/2-femur_angle-tibia_angle)-femur_length*sin(femur_angle)+foot_radius/2+0.005}-->
+
+  <!-- Import all gazebo-customisatino elements -->
+  <xacro:include filename="${find hexapod_description)/urdf/hexa.gazebo"/>
+
+  <xacro:macro name="default_inertial" params="mass">
+    <inertial> 
+      <mass value="${mass}"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </xacro:macro>
+
+  <link name="world"/>
+
+  <joint name="float" type="float">
+    <parent link="world"/>
+    <child link="link1"/>
+  </joint>
+
+  <link name="dummy">
+    <!-- Reason: https://answers.ros.org/question/192817/error-msg-the-root-link_base-has-an-inertia-specified-in-the-urdf-but-kdl/ -->
+  </link>
+
+  <link name="base_link">
+    <visual> 
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+    </collision>
+    <xacro:default_inertial mass="${body_mass}"/>
+  </link> 
+
+  <joint name="dummy_joint" type="fixed">
+    <parent link="dummy"/> 
+    <child link="base_link"/>
+  </joint>
+
+  <xacro:macro name="y_pos_leg" params="suffix">
+    <xacro:if value="${suffix == 'front'}">
+      <origin xyz="${reflect*body_x/2} ${body_y/2} 0" rpy="0 0 0"/>
+    </xacro:if>
+    <xacro:if value="${suffix == 'middle'}">
+      <origin xyz="${reflect*body_x/2} 0 0" rpy="0 0 0"/>
+    </xacro:if>
+    <xacro:if value="${suffix == 'back'}">
+      <origin xyz="${reflect*body_x/2} ${-body_y/2} 0" rpy="0 0 0"/>
+    </xacro:if>
+  </xacro:macro>
+
+
+  <xacro:macro name="leg" params="prefix suffix reflect">
+
+    <link name="${prefix}_${suffix}_coxa">
+      <visual>
+        <origin xyz="${reflect*coxa_length/2} 0 0" rpy="0 ${reflect*pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${coxa_length}"/>
+        </geometry>
+      </visual>
+      <xacro:default_inertial mass="${coxa_mass}"/>
+    </link>
+
+    <joint name="base_to_${prefix}_${suffix}_coxa" type="revolute"> 
+      <parent link="base_link"/>
+      <child link="${prefix}_${suffix}_coxa"/>
+      <xacro:y_pos_leg suffix="${suffix}"/>
+      <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+      <axis xyz="0 0 ${reflect}"/>
+    </joint> 
+
+    <link name="${prefix}_${suffix}_femur">
+      <visual>
+        <origin xyz="${reflect*femur_length/2} 0 0" rpy="0 ${reflect*pi/2} 0"/> 
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${femur_length}"/>
+        </geometry>
+      </visual>
+      <xacro:default_inertial mass="${femur_mass}"/>
+    </link> 
+
+    <joint name="${prefix}_${suffix}_coxa_to_${prefix}_${suffix}_femur" type="revolute">
+      <parent link="${prefix}_${suffix}_coxa"/>
+      <child link="${prefix}_${suffix}_femur"/> 
+      <origin xyz="${reflect*coxa_length} 0 0" rpy="0 ${-femur_angle*reflect} 0"/> 
+      <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+      <axis xyz="0 ${reflect} 0"/>
+    </joint>
+
+    <link name="${prefix}_${suffix}_tibia">
+      <visual> 
+        <origin xyz="${reflect*tibia_length/2} 0 0" rpy="0 ${reflect*pi/2} 0"/>
+        <geometry>
+          <cylinder radius="${leg_radius}" length="${tibia_length}"/>
+        </geometry>
+      </visual>
+      <xacro:default_inertial mass="${tibia_mass}"/>
+    </link>
+
+    <joint name="${prefix}_${suffix}_femur_to_${prefix}_${suffix}_tibia" type="revolute">
+      <parent link="${prefix}_${suffix}_femur"/>
+      <child link="${prefix}_${suffix}_tibia"/>
+      <origin xyz="${reflect*femur_length} 0 0" rpy="0 ${reflect*tibia_angle} 0"/>
+      <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+      <axis xyz="0 ${reflect} 0"/>
+    </joint>
+
+    <link name="${prefix}_${suffix}_foot">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="${foot_radius}"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="${foot_radius}"/>
+        </geometry>
+      </collision>
+      <xacro:default_inertial mass="0.002"/>
+    </link>
+
+    <joint name="${prefix}_${suffix}_tibia_to_${prefix}_${suffix}_foot" type="fixed">
+      <parent link="${prefix}_${suffix}_tibia"/>
+      <child link="${prefix}_${suffix}_foot"/>
+      <origin xyz="${reflect*tibia_length} 0 0" rpy="0 0 0"/>
+    </joint> 
+
+    <transmission name="${prefix}_${suffix}_coxa_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="base_to_${prefix}_${suffix}_coxa">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="base_to_${prefix}_${suffix}_coxa_motor">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <transmission name="${prefix}_${suffix}_coxa_to_${prefix}_${suffix}_femur_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${prefix}_${suffix}_coxa_to_${prefix}_${suffix}_femur">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${prefix}_${suffix}_coxa_to_${prefix}_${suffix}_femur_motor">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <transmission name="${prefix}_${suffix}_femur_to_${prefix}_${suffix}_tibia_transmission">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${prefix}_${suffix}_femur_to_${prefix}_${suffix}_tibia">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${prefix}_${suffix}_femur_to_${prefix}_${suffix}_tibia_motor">
+        <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro> 
+
+  <xacro:leg prefix="right" suffix="front" reflect="1"/>
+  <xacro:leg prefix="right" suffix="middle" reflect="1"/>
+  <xacro:leg prefix="right" suffix="back" reflect="1"/>
+  <xacro:leg prefix="left" suffix="front" reflect="-1"/>
+  <xacro:leg prefix="left" suffix="middle" reflect="-1"/>
+  <xacro:leg prefix="left" suffix="back" reflect="-1"/>
+</robot>

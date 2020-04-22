@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<robot name="hexa" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="body_x" value="0.100"/>
+  <xacro:property name="body_y" value="0.160"/>
+  <xacro:property name="body_z" value="0.050"/>
+
+  <xacro:property name="coxa_length" value="0.050"/>
+  <xacro:property name="femur_length" value="0.080"/>
+  <xacro:property name="tibia_length" value="0.180"/>
+  <xacro:property name="leg_radius" value="0.005"/>
+  <xacro:property name="femur_angle" value="${45*pi/180}"/>
+  <xacro:property name="tibia_angle" value="${105*pi/180}"/>
+  <xacro:property name="foot_radius" value="0.010"/>
+
+  <xacro:property name="mg90s_torque" value="${0.21582*0.8}"/> <!--stalltorque on earth is 2.2kgcm at 6v, 20% safety margin -->
+  <xacro:property name="mg90s_velocity" value="${0.8*180/60/pi*0.8}"/> <!--0.08sec/60degrees at 6v, 20% safety margin -->
+
+  <!--${tibia_length*cos(pi/2-femur_angle-tibia_angle)-femur_length*sin(femur_angle)+foot_radius/2+0.005}-->
+
+  <link name="base_link">
+    <visual> 
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${body_x} ${body_y} ${body_z}"/>
+      </geometry>
+    </collision>
+  </link> 
+
+
+  <link name="right_front_coxa">
+    <visual>
+      <origin xyz="${coxa_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="${leg_radius}" length="${coxa_length}"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="base_to_right_front_coxa" type="revolute"> 
+    <parent link="base_link"/>
+    <child link="right_front_coxa"/>
+    <origin xyz="${body_x/2} ${body_y/2} 0" rpy="0 0 0"/>
+    <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+    <axis xyz="0 0 1"/>
+  </joint> 
+
+  <link name="right_front_femur">
+    <visual>
+      <origin xyz="${femur_length/2} 0 0" rpy="0 ${pi/2} 0"/> 
+      <geometry>
+        <cylinder radius="${leg_radius}" length="${femur_length}"/>
+      </geometry>
+    </visual>
+  </link> 
+
+  <joint name="right_front_coxa_to_right_front_femur" type="revolute">
+    <parent link="right_front_coxa"/>
+    <child link="right_front_femur"/> 
+    <origin xyz="${coxa_length} 0 0" rpy="0 ${-femur_angle} 0"/> 
+    <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="right_front_tibia">
+    <visual> 
+      <origin xyz="${tibia_length/2} 0 0" rpy="0 ${pi/2} 0"/>
+      <geometry>
+        <cylinder radius="${leg_radius}" length="${tibia_length}"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="right_front_femur_to_right_front_tibia" type="revolute">
+    <parent link="right_front_femur"/>
+    <child link="right_front_tibia"/>
+    <origin xyz="${femur_length} 0 0" rpy="0 ${tibia_angle} 0"/>
+    <limit upper="${80/180*pi}" lower="${-80/180*pi}" effort="${mg90s_torque}" velocity="${mg90s_velocity}"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="right_front_foot">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${foot_radius}"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="${foot_radius}"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_front_tibia_to_right_front_foot" type="fixed">
+    <parent link="right_front_tibia"/>
+    <child link="right_front_foot"/>
+    <origin xyz="${tibia_length} 0 0" rpy="0 0 0"/>
+
+  </joint>  
+  
+ </robot>

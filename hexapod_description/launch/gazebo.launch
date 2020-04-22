@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- this launch file should be in a hexapod_gazebo package, not in the
+     description, which should be ros only --> 
+<launch>
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch"/>
+
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find hexapod_description)/urdf/hexa_3.urdf.xacro'"/>
+
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model hexapod -param robot_description"/>
+
+  <!--include file="$(find hexapod_control)/launch/hexapod_control.launch"/-->
+
+</launch>

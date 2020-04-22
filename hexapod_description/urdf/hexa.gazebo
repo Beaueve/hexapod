@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- Gazebo elements for hexapod_x.urdf.xacro, based on
+     rrbot_description/urdf/rrbot.gazebo -->
+<robot> 
+
+  <!--ros_control plugin -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNameSpace>/hexapod</robotNameSpace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+    </plugin>
+  </gazebo>
+
+</robot>

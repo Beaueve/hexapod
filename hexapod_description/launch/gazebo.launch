@@ -10,7 +10,7 @@
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch"/>
 
-  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find hexapod_description)/urdf/hexa_3.urdf.xacro'"/>
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find hexapod_description)/urdf/hexa_4.urdf.xacro'"/>
 
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model hexapod -param robot_description"/>
 

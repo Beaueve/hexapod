@@ -25,7 +25,13 @@
   <!--${tibia_length*cos(pi/2-femur_angle-tibia_angle)-femur_length*sin(femur_angle)+foot_radius/2+0.005}-->
 
   <!-- Import all gazebo-customisatino elements -->
-  <xacro:include filename="${find hexapod_description)/urdf/hexa.gazebo"/>
+  <!-- ros_control plugin -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/hexapod</robotNamespace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+    </plugin>
+  </gazebo>
 
   <xacro:macro name="default_inertial" params="mass">
     <inertial> 
@@ -34,16 +40,7 @@
     </inertial>
   </xacro:macro>
 
-  <link name="world"/>
-
-  <joint name="float" type="float">
-    <parent link="world"/>
-    <child link="link1"/>
-  </joint>
-
-  <link name="dummy">
-    <!-- Reason: https://answers.ros.org/question/192817/error-msg-the-root-link_base-has-an-inertia-specified-in-the-urdf-but-kdl/ -->
-  </link>
+  <link name="dummy"/>
 
   <link name="base_link">
     <visual> 
